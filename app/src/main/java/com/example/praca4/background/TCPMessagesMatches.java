@@ -86,6 +86,19 @@ public class TCPMessagesMatches {
 
         Log.d("TCPMessagesMatches", "added handler with tag: " + tag.name() + ", and address: " + ipAddress.getHostAddress());
     }
+
+    public void stop(){
+        Map<InetAddress, WeakReference<Handler>> byAddress = handlers.get(tag);
+        if (byAddress == null) return;
+
+        byAddress.remove(ipAddress);
+
+        if(byAddress.isEmpty())
+            handlers.remove(tag);
+
+
+        Log.d("TCPMessagesMatches", "removed handler with tag: " + tag.name() + ", and address: " + ipAddress.getHostAddress());
+    }
     public static Handler getHandler(Tags tag, InetAddress incomingAddress) {
         logTagMap();
 
@@ -120,18 +133,7 @@ public class TCPMessagesMatches {
         return defaultHandler;
     }
 
-    public void stop(){
-        Map<InetAddress, WeakReference<Handler>> byAddress = handlers.get(tag);
-        if (byAddress == null) return;
 
-        byAddress.remove(ipAddress);
-
-        if(byAddress.isEmpty())
-            handlers.remove(tag);
-
-
-        Log.d("TCPMessagesMatches", "removed handler with tag: " + tag.name() + ", and address: " + ipAddress.getHostAddress());
-    }
 
     public static class TCPResponse{
         private final Tags tag;
@@ -153,7 +155,6 @@ public class TCPMessagesMatches {
     public interface Handler{
         TCPResponse onMatch(byte [] data, InetAddress inetAddress, Context context);
     }
-
 
     public static final TCPMessagesMatches DEVICE_INFO_EXCHANGE =
             new TCPMessagesMatches(Tags.DEVICE_INFO_EXCHANGE, WILDCARD, new Handler() {

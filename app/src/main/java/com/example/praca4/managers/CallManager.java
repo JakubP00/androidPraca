@@ -4,16 +4,21 @@ import android.content.Context;
 import android.media.AudioTrack;
 import android.util.Log;
 
+import com.example.praca4.adapters.CallAdapter;
 import com.example.praca4.background.TCPMessagesMatches;
 import com.example.praca4.background.UDPMessagesMatches;
 import com.example.praca4.network.ClientTCP;
 import com.example.praca4.network.ClientUDP;
 import com.example.praca4.network.Tags;
+import com.example.praca4.room.dto.AudioDataDto;
 import com.example.praca4.room.dto.CurrentCallDto;
+import com.example.praca4.room.dto.UserDto;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,18 +27,38 @@ public class CallManager {
     private final Map<InetAddress, ConnectedUser>  connectedUsers;
 
 
+    private final Handler handler;
+    public interface Handler{
+        void onStatusChange();
+    }
 
-    public CallManager(){
+    public CallManager(Handler handler){
+        this.handler = handler;
         connectedUsers = new HashMap<>();
     }
 
 
-
+    public List<CallAdapter.ConnectedUser> getConnectedUsersList() {
+        List<CallAdapter.ConnectedUser> connectedUsersList = new ArrayList<>();
+        connectedUsers.forEach(((inetAddress, connectedUser) ->{
+            connectedUsersList.add(new CallAdapter.ConnectedUser("Needs finishing", connectedUser.getState()));
+        } ));
+        Log.d("Call", "amount of users: "  + connectedUsersList.size());
+        return  connectedUsersList;
+    }
 
     public boolean addUser(ConnectedUser connectedUser){
 
+
+
         try {
             InetAddress inetAddress = InetAddress.getByName(connectedUser.currentCallDto.getIpAddress());
+            connectedUser.setHandler(new ConnectedUser.Handler() {
+                @Override
+                public void onStatusChange() {
+                    handler.onStatusChange();
+                }
+            });
             if(connectedUsers.containsKey(inetAddress)){
                 Objects.requireNonNull(connectedUsers.get(inetAddress)).setStillInCall(true);
                 return false;
@@ -42,6 +67,7 @@ public class CallManager {
                 connectedUser.setStillInCall(true);
                 return true;
             }
+
         } catch (UnknownHostException e) {
             Log.e("CallManager", "IpAddress can not be interpreted " + connectedUser.currentCallDto.getIpAddress());
             return false;
@@ -90,11 +116,11 @@ public class CallManager {
 
     }
 
-    public void sendSound(byte [] soundData){
+    public void sendSound(AudioDataDto audioDataDto){
         connectedUsers.forEach( ((inetAddress, connectedUser) -> {
 
             if(connectedUser.getState() == ConnectedUser.State.CONNECTED_INITIALIZED)
-                connectedUser.sendSound(soundData);
+                connectedUser.sendSound(audioDataDto.getAudioMessage());
 
         }));
     }
@@ -144,12 +170,15 @@ public class CallManager {
     public static class ConnectedUser{
 
         private static boolean playSound = false;
-        private boolean stillInCall = false;
         private final AudioTrack audioTrack;
         private final CurrentCallDto currentCallDto;
         private TCPMessagesMatches tcpMessagesMatchPOSITIVE = null;
         private TCPMessagesMatches tcpMessagesMatchNEGATIVE = null;
 
+        private ConnectedUser.Handler handler;
+        private interface Handler{
+            void onStatusChange();
+        }
         private UDPMessagesMatches udpMessagesMatchesReceivedSound;
         private State state;
         public ConnectedUser(int audioId, CurrentCallDto currentCallDto, State state) {
@@ -164,6 +193,9 @@ public class CallManager {
             ConnectedUser.playSound = playSound;
         }
 
+        public void setHandler(Handler handler){
+            this.handler = handler;
+        }
         public void stop(){
             if(udpMessagesMatchesReceivedSound != null)
                 udpMessagesMatchesReceivedSound.stop();
@@ -179,6 +211,8 @@ public class CallManager {
 
         public void setState(State state) {
             this.state = state;
+            if(handler != null)
+                handler.onStatusChange();
         }
 
         public TCPMessagesMatches getTcpMessagesMatchPOSITIVE() {
@@ -188,15 +222,6 @@ public class CallManager {
 
         public TCPMessagesMatches getTcpMessagesMatchNEGATIVE() {
             return tcpMessagesMatchNEGATIVE;
-        }
-
-
-        public boolean isStillInCall() {
-            return stillInCall;
-        }
-
-        public void setStillInCall(boolean stillInCall) {
-            this.stillInCall = stillInCall;
         }
 
         public void start() {
@@ -214,7 +239,7 @@ public class CallManager {
                 });
 
                 udpMessagesMatchesReceivedSound.start();
-                state = State.CONNECTED_INITIALIZED;
+                setState(State.CONNECTED_INITIALIZED);
 
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e);
@@ -241,7 +266,7 @@ public class CallManager {
                     public TCPMessagesMatches.TCPResponse onMatch(byte[] data, InetAddress inetAddress, Context context) {
                         tcpMessagesMatchPOSITIVE.stop();
                         tcpMessagesMatchNEGATIVE.stop();
-                        state = State.CONNECTED;
+                        setState( State.CONNECTED);
                         start();
 
                         return new TCPMessagesMatches.TCPResponse(Tags.OK);
@@ -252,7 +277,7 @@ public class CallManager {
                     public TCPMessagesMatches.TCPResponse onMatch(byte[] data, InetAddress inetAddress, Context context) {
                         tcpMessagesMatchPOSITIVE.stop();
                         tcpMessagesMatchNEGATIVE.stop();
-                        state = State.REFUSED;
+                        setState( State.REFUSED);
                         return new TCPMessagesMatches.TCPResponse(Tags.OK);
                     }
                 });
@@ -267,13 +292,20 @@ public class CallManager {
 
 
         public enum State{
-            UN_CALLED(), //was not called yet
-            CAllED(), //was called account is set to answer
-            CONNECTED(), // is consider ready to receive sound may be already sending sound
-            CONNECTED_INITIALIZED(), // is consider ready to receive sound and both receiving and sending sound is already setup
-            REFUSED(), //user REFUSED
-            UN_ANSWERED(),//was called but user account is set to not answer
-            STOPED(); // user disconnected from the call
+            UN_CALLED(0), //was not called yet
+            CAllED(1), //was called account is set to answer
+            CONNECTED(2), // is consider ready to receive sound may be already sending sound
+            CONNECTED_INITIALIZED(3), // is consider ready to receive sound and both receiving and sending sound is already setup
+            REFUSED(4), //user REFUSED
+            UN_ANSWERED(5),//was called but user account is set to not answer
+            STOPED(6); // user disconnected from the call
+
+
+            private int x;
+            State(int x){
+                this.x = x;
+            }
+            public int getX() {return x;}
         }
     }
 }

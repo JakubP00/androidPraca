@@ -13,10 +13,12 @@ public class CurrentCall {
     @PrimaryKey
     private String uuid;
 
+    private int state;
+
     private int audioId;
 
-    public CurrentCall(@NonNull String uuid, int audioId) {
-        this.uuid = uuid;
+    public CurrentCall(@NonNull String uuid, int audioId, int state) {
+        this.uuid = uuid;this.audioId = audioId; this.state = state;
     }
 
     @NonNull
@@ -24,4 +26,9 @@ public class CurrentCall {
     public void setUuid(@NonNull String uuid) {this.uuid = uuid;}
     public int getAudioId() {return audioId;}
     public void setAudioId(int audioId) {this.audioId = audioId;}
+
+
+    public int getState() {return state;}
+
+    public void setState(int state) {this.state = state;}
 }

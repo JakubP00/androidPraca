@@ -13,17 +13,14 @@ public class KnownUsers {
     @PrimaryKey
     private String uuid;
 
-    @ColumnInfo(name = "user_name")
-    private String userName;
 
-    @ColumnInfo(name = "custom_name")
+    private String username;
+
+
     private String customName;
 
-    @ColumnInfo(
-            name = "created_at",
-            defaultValue = "CURRENT_TIMESTAMP"
-    )
-    private String updatedAt;
+    @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
+    private String lastUpdate;
 
 
     public KnownUsers(@NonNull String uuid){
@@ -31,13 +28,13 @@ public class KnownUsers {
     }
 
     @Ignore
-    public KnownUsers(@NonNull String uuid, String userName){
+    public KnownUsers(@NonNull String uuid, String username){
         this.uuid = uuid;
-        this.userName = userName;
+        this.username = username;
     }
 
-    public String getUserName() {return userName;}
-    public void setUserName(String userName) {this.userName = userName;}
+    public String getUsername() {return username;}
+    public void setUsername(String userName) {this.username = userName;}
 
     public String getCustomName() {return customName;}
     public void setCustomName(String customName) {this.customName = customName;}
@@ -45,6 +42,6 @@ public class KnownUsers {
     public String getUuid() {return uuid;}
     public void setUuid(String uuid) {this.uuid = uuid;}
 
-    public String getUpdatedAt() {return updatedAt;}
-    public void setUpdatedAt(String updatedAt) {this.updatedAt = updatedAt;}
+    public String getLastUpdate() {return lastUpdate;}
+    public void setLastUpdate(String lastUpdate) {this.lastUpdate = lastUpdate;}
 }

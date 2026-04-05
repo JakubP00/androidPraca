@@ -49,14 +49,11 @@ public class ClientTCP {
                     data = ByteBuffer.allocate(messageSize - Integer.BYTES).put(buffer, Integer.BYTES, messageSize - Integer.BYTES).array();
 
 
-
                 listener.onMessageArrived(Tags.fromInt(tagCode), data);
-
 
 
                 Log.d("ClientTCP", "Response received with tag: " + Tags.fromInt(tagCode).name());
 
-                //do wywalenia potem
 
             } catch (Exception e) {
                 Log.e("ClientTCP", e.getMessage() != null ? e.getMessage() : "Unknown exception");

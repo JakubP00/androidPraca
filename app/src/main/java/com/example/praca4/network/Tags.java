@@ -17,7 +17,7 @@ public enum Tags {
     BAD_PATH(8),
 
     ERROR(9),
-    CALL_ENDED(10);
+    CALL_END(10);
 
 
     private final int x;

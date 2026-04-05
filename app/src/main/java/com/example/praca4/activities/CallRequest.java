@@ -86,8 +86,9 @@ public class CallRequest extends AppCompatActivity {
                                 intent.putExtra(Call.intentData.CALLING_PARTY.name(), false);
                                 intent.putExtra(Call.intentData.CALLING_PARTY_INET_ADDRESS.name(), ipAddress);
                                 startActivity(intent);
+                                finish();
                             }else{
-                                Log.e("Call", "unexpected"); //pasowało by dać coś co poinformuje urzytkownika co się dzieje;
+                                Log.e("Call", "unexpected");
                             }
                         }
                     });

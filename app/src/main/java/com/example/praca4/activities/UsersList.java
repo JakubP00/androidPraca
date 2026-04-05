@@ -30,7 +30,6 @@ public class UsersList extends AppCompatActivity {
     UserDataManager userDataManager;
     ListView listView;
 
-    ClientUDP clientUDP;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,8 +54,6 @@ public class UsersList extends AppCompatActivity {
 
 
 
-
-
         userDataManager = new UserDataManager(this);
 
         Database database = Database.getInstance(this.getApplicationContext());
@@ -64,12 +61,11 @@ public class UsersList extends AppCompatActivity {
         listView = findViewById(R.id.localUsersList);
         Button btnScan = findViewById(R.id.scan);
 
-        clientUDP = new ClientUDP();
 
         btnScan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                clientUDP.sendMessage(NetworkUtilities.WILDCARD, Tags.DEVICE_INFO_EXCHANGE_REQUEST, null);
+                ClientUDP.sendMessage(NetworkUtilities.WILDCARD, Tags.DEVICE_INFO_EXCHANGE_REQUEST, null);
             }
         });
 

@@ -7,67 +7,55 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.AudioRecord;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.ListView;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresPermission;
+import androidx.annotation.UiThread;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.example.praca4.R;
+import com.example.praca4.adapters.CallAdapter;
 import com.example.praca4.managers.CallManager;
+import com.example.praca4.managers.PermissionManager;
 import com.example.praca4.managers.SoundManager;
-import com.example.praca4.managers.VoiceManager;
-import com.example.praca4.network.BackgroundTask;
-import com.example.praca4.network.ClientTCP;
 import com.example.praca4.room.Database;
 
+import java.io.Console;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 
 public class Call extends AppCompatActivity {
 
-
-    private BackgroundTask backgroundTask;
     private boolean callingParty = true;
-
-    private volatile boolean talking = true;
-    private final CallManager callManager = new CallManager();
+    private CallManager callManager;
     InetAddress callingPartyInetAddress;
-
-    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    private AudioRecord audioRecord;
-
     Database database;
-
-    Thread sendSound;
+    private boolean record = false;
+    private PermissionManager permissionManager;
     private Button returnButton;
-
     private Button talkButton;
-    private TextView tvCallMessage;
+    private ListView listView;
 
+    private SoundManager soundManager;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_call);
-
 
         setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
@@ -78,33 +66,48 @@ public class Call extends AppCompatActivity {
             }
         });
 
+        soundManager = new SoundManager();
+        permissionManager = new PermissionManager(Manifest.permission.RECORD_AUDIO, new PermissionManager.Handler() {
+            @Override
+            public void onPermissionGranted() {
+                if (ActivityCompat.checkSelfPermission(Call.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+                soundManager.InitializeRecording(Call.this);
+            }
+        }, "This permission is necessary to speak in a call", this, 100 );
 
-        tvCallMessage = findViewById(R.id.tvCallMessage);
+
+        View root = findViewById(R.id.callRootLayout);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            view.setPadding(
+                    view.getPaddingLeft(),
+                    view.getPaddingTop(),
+                    view.getPaddingRight(),
+                    systemBars.bottom
+            );
+            return insets;
+        });
+
+
+
+        listView = findViewById(R.id.callList);
         returnButton = findViewById(R.id.btnCallReturn);
         talkButton = findViewById(R.id.btnTalk);
 
 
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-
-
-        byte [] audioBuffer = new byte[SoundManager.getBufferSize()];
-
-
-
-
-
-
+        callManager = new CallManager(new CallManager.Handler() {
+            @Override
+            public void onStatusChange() {
+                Call.this.runOnUiThread(
+                    new Thread(() ->
+                        listView.setAdapter(new CallAdapter(Call.this, R.layout.call_row, callManager.getConnectedUsersList()))
+                    )
+                );
+            }
+        });
 
 
         Intent myIntent = getIntent();
@@ -115,7 +118,7 @@ public class Call extends AppCompatActivity {
             callingPartyInetAddress = null;
         }
 
-        Log.d("Test3", "czy ten address ma sens?" + callingPartyInetAddress.getHostAddress());
+
 
         database = Database.getInstance(this.getApplicationContext());
             database.currentCallDao().observeUsers().observe(this, users -> {
@@ -126,6 +129,7 @@ public class Call extends AppCompatActivity {
                             Objects.equals(user.getIpAddress(), callingPartyInetAddress.getHostAddress()) && !callingParty;
 
 
+
                     CallManager.ConnectedUser connectedUser =
                             new CallManager.ConnectedUser(user.getAudioId(), user, considerConnectedFromTheStart ? CallManager.ConnectedUser.State.CONNECTED : CallManager.ConnectedUser.State.UN_CALLED);
 
@@ -134,16 +138,15 @@ public class Call extends AppCompatActivity {
                 callManager.removeUsersNotInCall();
 
                 callManager.callUsersNotYetCalled();
+                callManager.playSound();
+                listView.setAdapter(new CallAdapter(this, R.layout.call_row, callManager.getConnectedUsersList()));
             });
 
-
-        tvCallMessage.setText("waiting for response");
 
         returnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                talking = false;
 
                 callManager.stopPlayingSound();
                 callManager.stopCall();
@@ -154,62 +157,28 @@ public class Call extends AppCompatActivity {
         });
 
 
-        talkButton.setOnTouchListener(new View.OnTouchListener() {
+
+        permissionManager.requestRuntimePermission();
+
+
+
+        talkButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    talking = true;
-                    sendSound = new Thread(() -> {
-                        AudioRecord audioRecord = SoundManager.getNewRecorder();
-                        audioRecord.startRecording();
-                        while (talking) {
-
-                            int read = audioRecord.read(audioBuffer, 0, audioBuffer.length);
-
-
-
-                            if(read > 0){
-                                byte [] soundData = ByteBuffer.allocate(read).put(audioBuffer, 0, read).array();
-
-                                double sum = 0.0;
-                                int sampleCount = read / 2;
-
-                                for (int i = 0; i < read - 1; i += 2) {
-                                    short sample = (short) (
-                                            (soundData[i] & 0xFF) | (soundData[i + 1] << 8)
-                                    );
-                                    sum += sample * sample;
-                                }
-
-                                double rms = Math.sqrt(sum / sampleCount);
-
-                                double SPEECH_THRESHOLD = 1000;
-
-                                if(rms > SPEECH_THRESHOLD )
-                                    callManager.sendSound(soundData);
-                            }
-
-                        }
-                        audioRecord.stop();
-                    });
-                    sendSound.start();
-                    callManager.stopPlayingSound();
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    talking = false;
-                    callManager.playSound();
-                    v.performClick();
+            public void onClick(View v) {
+                if(record){
+                    soundManager.StopRecording();
+                    record = false;
+                    talkButton.setText("Muted");
+                }else{
+                    soundManager.RecordVoiceAndSendIt(callManager);
+                    record = true;
+                    talkButton.setText("Recording");
                 }
-                return true;
             }
-
         });
 
 
-
     }
-
-
-
 
 
 
@@ -221,9 +190,11 @@ public class Call extends AppCompatActivity {
 
 
 
-
-
-
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults, int deviceId) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId);
+        permissionManager.onRequestPermissionsResult(requestCode,  grantResults);
+    }
 
     public enum intentData{
 
