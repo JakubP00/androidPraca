@@ -50,6 +50,7 @@ public class UDPMessagesMatches {
 
         Map<InetAddress, WeakReference<Handler>> byAddress = handlers.get(tag);
         if (byAddress == null) {
+            Log.d("UDPMessagesMatches", "no matcher fo tag " + tag.name());
             return defaultHandler;
         }
 
@@ -57,6 +58,7 @@ public class UDPMessagesMatches {
         if (ref != null) {
             Handler handler = ref.get();
             if (handler != null) {
+                Log.d("UDPMessagesMatches", "exact match");
                 return handler;
             } else {
                 byAddress.remove(incomingAddress); // cleanup
@@ -69,6 +71,7 @@ public class UDPMessagesMatches {
         if (ref != null) {
             Handler handler = ref.get();
             if (handler != null) {
+                Log.d("UDPMessagesMatches", "WILDCARD match");
                 return handler;
             } else {
                 byAddress.remove(WILDCARD); // cleanup
@@ -79,6 +82,7 @@ public class UDPMessagesMatches {
             handlers.remove(tag);
         }
 
+        Log.d("UDPMessagesMatches", "no ip match");
         return defaultHandler;
     }
 

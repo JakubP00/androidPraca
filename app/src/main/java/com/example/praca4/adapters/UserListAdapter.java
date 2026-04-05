@@ -1,7 +1,5 @@
 package com.example.praca4.adapters;
 
-import static androidx.core.content.ContextCompat.startActivity;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -16,11 +14,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.example.praca4.R;
-import com.example.praca4.activities.Call;
+import com.example.praca4.activities.Call2;
+import com.example.praca4.managers.CallManager2;
 import com.example.praca4.room.Database;
 import com.example.praca4.room.dto.UserDto;
 import com.example.praca4.room.entities.CurrentCall;
-import com.example.praca4.room.entities.LocalNetworkUsers;
 
 import java.util.List;
 
@@ -64,21 +62,24 @@ public class UserListAdapter extends ArrayAdapter<UserDto> {
         uiElements.btnCall.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getContext(), Call.class);
 
+                Intent intent = new Intent(context, Call2.class);
                 Log.d("Test3", userDto.getIpAddress());
-                intent.putExtra(Call.intentData.CALLING_PARTY_INET_ADDRESS.name(), userDto.getIpAddress());
-                intent.putExtra(Call.intentData.CALLING_PARTY.name(), true);
+              //  intent.putExtra(Call.intentData.CALLING_PARTY_INET_ADDRESS.name(), userDto.getIpAddress());
+              //  intent.putExtra(Call.intentData.CALLING_PARTY.name(), true);
                 Database.databaseExecutor.execute(() -> {
                     Database database =  Database.getInstance(getContext());
 
                     database.currentCallDao().clearTable();
+                    CurrentCall currentCall = new CurrentCall(userDto.getUuid(), 1, CallManager2.CallMember.State.UN_CALLED.getX());
+                    Log.d("Test3", userDto.getUsername());
+                    database.currentCallDao().insertAll(currentCall);
 
-                    LocalNetworkUsers localNetworkUser =  database.localNetworkUsersDao().getByIpAddress(userDto.getIpAddress());
+                    Log.d("Test3", userDto.getUuid() + " " + CallManager2.CallMember.State.UN_CALLED.getX());
 
-                    database.currentCallDao().insertAll(new CurrentCall(localNetworkUser.getUuid(), 1));
                 });
-                getContext().startActivity(intent);
+                Log.d("Test3", "after ");
+                context.startActivity(intent);
             }
         });
 

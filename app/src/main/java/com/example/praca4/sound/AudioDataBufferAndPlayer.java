@@ -3,6 +3,7 @@ package com.example.praca4.sound;
 import android.media.AudioTrack;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 
 import com.example.praca4.managers.SoundManager;
 import com.example.praca4.room.dto.AudioDataDto;
@@ -62,6 +63,7 @@ public class AudioDataBufferAndPlayer {
         highestOrder.setLowerOrder(lowestOrder);
     }
     public void insertToTheQueue(AudioDataDto audioDataDto){
+        Log.d("AudioDataBufferAndPlayer", "inserting to the Queue" );
         long offsetSample = System.currentTimeMillis() - audioDataDto.getTimeStamp();
         boolean shouldSchedule = false;
 

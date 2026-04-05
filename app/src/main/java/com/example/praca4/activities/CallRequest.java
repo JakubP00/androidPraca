@@ -2,12 +2,9 @@ package com.example.praca4.activities;
 
 import static java.lang.Thread.setDefaultUncaughtExceptionHandler;
 
-import android.content.ComponentName;
-import android.content.Context;
+
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -16,13 +13,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.praca4.R;
-import com.example.praca4.network.BackgroundTask;
+import com.example.praca4.managers.CallManager2;
 import com.example.praca4.network.ClientTCP;
-import com.example.praca4.network.ClientUDP;
 import com.example.praca4.network.Tags;
 import com.example.praca4.room.Database;
-import com.example.praca4.room.Database_Impl;
-import com.example.praca4.room.dto.UserDto;
 import com.example.praca4.room.entities.CurrentCall;
 import com.example.praca4.room.entities.LocalNetworkUsers;
 
@@ -79,12 +73,11 @@ public class CallRequest extends AppCompatActivity {
 
                                     LocalNetworkUsers localNetworkUser =  database.localNetworkUsersDao().getByIpAddress(ipAddress);
 
-                                    database.currentCallDao().insertAll(new CurrentCall(localNetworkUser.getUuid(), 1));
+                                    database.currentCallDao().insertAll(new CurrentCall(localNetworkUser.getUuid(), 1, CallManager2.CallMember.State.CONNECTED.getX()));
                                 });
 
-                                Intent intent = new Intent( getApplicationContext(), Call.class);
-                                intent.putExtra(Call.intentData.CALLING_PARTY.name(), false);
-                                intent.putExtra(Call.intentData.CALLING_PARTY_INET_ADDRESS.name(), ipAddress);
+                                Intent intent = new Intent( getApplicationContext(), Call2.class);
+
                                 startActivity(intent);
                                 finish();
                             }else{

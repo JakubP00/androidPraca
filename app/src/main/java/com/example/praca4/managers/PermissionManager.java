@@ -1,8 +1,6 @@
 package com.example.praca4.managers;
 
-import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -10,12 +8,9 @@ import android.net.Uri;
 import android.provider.Settings;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
-import com.example.praca4.activities.Call;
 
 public class PermissionManager {
 

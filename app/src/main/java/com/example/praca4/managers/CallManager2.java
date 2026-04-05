@@ -1,6 +1,7 @@
 package com.example.praca4.managers;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModel;
@@ -25,19 +26,22 @@ public class CallManager2 {
 
 
 
-    private CallMembers callMembers;
-    private final AppCompatActivity appCompatActivity;
+    private final CallMembers callMembers = new CallMembers();
+
 
     public CallManager2( AppCompatActivity appCompatActivity) {
-        this.appCompatActivity = appCompatActivity;
         Database database = Database.getInstance(appCompatActivity);
+
+        Log.d("CallManager", "new call");
 
         database.currentCallDao().observeUsersInCall().observe(appCompatActivity, users -> {
             for(String uuid : users){
-                if (!callMembers.map.containsKey(uuid))
+                if (!callMembers.map.containsKey(uuid)) {
+                    Log.d("CallManager", "adding new user to call part 1");
                     CallMember.create(uuid, database, (callMember) -> {
                         callMembers.map.put(uuid, callMember);
                     });
+                }
             }
         });
     }
@@ -71,6 +75,7 @@ public class CallManager2 {
         private CallMember(){}
 
         public static void create(String uuid, Database database, Consumer<CallMember> callback) {
+            Log.d("CallManager", "adding new user to call part 2");
             Database.databaseExecutor.execute(() -> {
 
                 CurrentCallDto dto = database.currentCallDao().getUserData(uuid);
@@ -112,6 +117,7 @@ public class CallManager2 {
                 member.audioDataReceived = new UDPMessagesMatches(Tags.AUDIO, member.userIpAddress, new UDPMessagesMatches.Handler() {
                     @Override
                     public void onMatch(byte[] data, InetAddress inetAddress, Context context) {
+                        Log.d("CallManager", "Audio from: " + inetAddress.toString());
                         if(member.playSound)
                             member.audioDataBufferAndPlayer.insertToTheQueue(new AudioDataDto(data));
                     }
@@ -124,8 +130,10 @@ public class CallManager2 {
 
 
         public void updateState(State state){
+            Log.d("CallManager", "new state of user:  " + userName + " state:  " + state.toString());
             //w przypadku gdym implementował powrut po kraszu to każdy matcher musi być ustawiony dla każdego tagu
-            switch (state){
+            this.state = state;
+            switch (this.state){
                 case UN_CALLED:
                     callRequestPositiveAnswer.start();
                     callRequestNegativeAnswer.start();

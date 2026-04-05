@@ -1,12 +1,16 @@
 package com.example.praca4.activities;
 
+import static java.lang.Thread.setDefaultUncaughtExceptionHandler;
+
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -26,9 +30,13 @@ public class Call2 extends AppCompatActivity {
     private Button MuteButton;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
-        super.onCreate(savedInstanceState, persistentState);
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Log.d("CallActivity", "opened");
+
         setContentView(R.layout.activity_call);
+
         View root = findViewById(R.id.callRootLayout);
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -40,6 +48,15 @@ public class Call2 extends AppCompatActivity {
             );
             return insets;
         });
+
+        setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+                Log.e("UncaughtExceptionHandler", t.getName() + (e.getMessage() != null ? e.getMessage() : "no message"));
+            }
+        });
+
+        Log.d("CallActivity", "starting call");
 
         MuteButton = findViewById(R.id.btnTalk);
         CallManager2 callManager = new CallManager2(this);
@@ -59,6 +76,8 @@ public class Call2 extends AppCompatActivity {
 
 
         permissionManager.requestRuntimePermission();
+        Log.d("CallActivity", "RECORD_AUDIO granted");
         soundManager.recordAudioData(callManager);
+        Log.d("CallActivity", "RECORDing audio");
     }
 }

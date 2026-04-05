@@ -1,5 +1,7 @@
 package com.example.praca4.room.dto;
 
+import android.util.Log;
+
 import com.example.praca4.sound.AudioDataBufferAndPlayer;
 
 import java.nio.ByteBuffer;
@@ -8,11 +10,11 @@ import java.nio.ByteBuffer;
 public class AudioDataDto implements Comparable<AudioDataDto>{
 
 
-    private final byte[] audioData;
+    private  byte[] audioData;
 
-    private final long timeStamp;
+    private  long timeStamp;
 
-    private final long order;
+    private  long order;
 
     public AudioDataDto(byte[] audioData, long order) {
         this.order = order;
@@ -21,11 +23,21 @@ public class AudioDataDto implements Comparable<AudioDataDto>{
     }
 
     public AudioDataDto(byte[] audioMessage){
-        ByteBuffer byteBuffer = ByteBuffer.allocate(audioMessage.length);
-        order = byteBuffer.getInt();
-        timeStamp = byteBuffer.getInt();
-        audioData = new byte [audioMessage.length - Long.BYTES * 2];
-        byteBuffer.get(audioData, Long.BYTES * 2, audioMessage.length - Long.BYTES * 2);
+        try{
+            Log.d("test3", "0");
+            ByteBuffer byteBuffer = ByteBuffer.allocate(audioMessage.length).put(audioMessage);
+            byteBuffer.rewind();
+            Log.d("test3", "1");
+            order = byteBuffer.getLong();
+            Log.d("test3", "2");
+            timeStamp = byteBuffer.getLong();
+            Log.d("test3", "audioMessage size " + (audioMessage.length - Long.BYTES * 2) + "/ " + order + "/ " + timeStamp);
+            audioData = ByteBuffer.allocate(audioMessage.length - Long.BYTES * 2).put(audioMessage, Long.BYTES * 2, audioMessage.length - Long.BYTES * 2).array();
+        }catch (Exception e){
+            Log.e("test3", e.getMessage() != null ? e.getMessage() + " " : "Unknown error");
+
+        }
+
     }
 
 

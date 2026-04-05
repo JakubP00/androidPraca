@@ -35,7 +35,7 @@
             android:turnScreenOn="true"
             android:exported="false"/>
 
-        <activity android:name=".activities.Call"
+        <activity android:name=".activities.Call2"
             android:exported="false"/>
 
 

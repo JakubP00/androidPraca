@@ -57,7 +57,7 @@ public class ServerUDP {
                 }
 
             } catch (Exception e) {
-                Log.e("ServerUDP", e.getMessage() != null ? e.getMessage() : "Unknown ServerUDP error");
+                Log.e("ServerUDP", e.getMessage() != null ? e.getMessage() + " " : "Unknown ServerUDP error");
                 listening = false;
             }
         }).start();

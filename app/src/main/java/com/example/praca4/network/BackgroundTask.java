@@ -18,20 +18,11 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.example.praca4.R;
-import com.example.praca4.activities.Call;
 import com.example.praca4.activities.CallRequest;
 import com.example.praca4.background.TCPMessagesMatches;
 import com.example.praca4.background.UDPMessagesMatches;
-import com.example.praca4.managers.UserDataManager;
-import com.example.praca4.room.Database;
-import com.example.praca4.room.dto.UserDto;
-import com.example.praca4.room.entities.LocalNetworkUsers;
 
-import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
-import java.util.HashSet;
-import java.util.Set;
 
 
 public class BackgroundTask extends Service {

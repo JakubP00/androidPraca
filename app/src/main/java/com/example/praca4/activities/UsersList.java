@@ -1,10 +1,14 @@
 package com.example.praca4.activities;
 
+import static java.lang.Thread.setDefaultUncaughtExceptionHandler;
+
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -49,7 +53,12 @@ public class UsersList extends AppCompatActivity {
             return insets;
         });
 
-
+        setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+                Log.e("UncaughtExceptionHandler", t.getName() + (e.getMessage() != null ? e.getMessage() : "no message"));
+            }
+        });
 
 
 
